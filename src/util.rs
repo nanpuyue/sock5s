@@ -2,7 +2,7 @@ use std::mem::MaybeUninit;
 
 use tokio::io::{self, AsyncRead, AsyncWrite};
 
-use crate::error::Result;
+use crate::error::{Error, Result};
 
 pub trait ToHex {
     fn to_hex(&self) -> String;
@@ -19,6 +19,16 @@ impl ToHex for [u8] {
         }
 
         unsafe { String::from_utf8_unchecked(v) }
+    }
+}
+
+pub trait IntoResult<T> {
+    fn into_result(self) -> Result<T>;
+}
+
+impl<T> IntoResult<T> for Option<T> {
+    fn into_result(self) -> Result<T> {
+        self.ok_or_else(|| Error::from("NoneError"))
     }
 }
 
@@ -46,14 +56,14 @@ pub fn set_rlimit_nofile(limit: libc::rlim_t) -> Result<()> {
     unsafe {
         let mut rlimit = MaybeUninit::uninit();
         if libc::getrlimit(libc::RLIMIT_NOFILE, rlimit.as_mut_ptr()) != 0 {
-            return Err((io::Error::last_os_error()).into());
+            return Err(io::Error::last_os_error().into());
         }
         let mut rlimit = rlimit.assume_init();
 
         if rlimit.rlim_cur < limit {
             rlimit.rlim_cur = limit;
             if libc::setrlimit(libc::RLIMIT_NOFILE, &rlimit) != 0 {
-                return Err((io::Error::last_os_error()).into());
+                return Err(io::Error::last_os_error().into());
             }
         }
     }
