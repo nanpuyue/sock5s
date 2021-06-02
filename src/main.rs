@@ -1,5 +1,3 @@
-#![feature(try_trait)]
-
 use std::fmt::{self, Display, Formatter};
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::pin::Pin;
@@ -18,7 +16,7 @@ use self::{
     listener::Socks5Listener,
     target::{DirectConnector, Socks5Target, TargetConnector},
     udp::Socks5UdpClient,
-    util::{link_stream, set_rlimit_nofile},
+    util::{link_stream, set_rlimit_nofile, IntoResult},
 };
 
 pub type Socks5Stream = TcpStream;
