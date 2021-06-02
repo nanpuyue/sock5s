@@ -1,6 +1,9 @@
 use std::mem::MaybeUninit;
+use std::net::SocketAddr;
+use std::sync::Arc;
 
 use tokio::io::{self, AsyncRead, AsyncWrite};
+use tokio::net::UdpSocket;
 
 use crate::error::{Error, Result};
 
@@ -69,4 +72,45 @@ pub fn set_rlimit_nofile(limit: libc::rlim_t) -> Result<()> {
     }
 
     Ok(())
+}
+
+#[derive(Debug)]
+pub struct SendHalf<T>(Arc<T>);
+
+#[derive(Debug)]
+pub struct RecvHalf<T>(Arc<T>);
+
+pub trait Split {
+    fn split(self) -> (RecvHalf<Self>, SendHalf<Self>)
+    where
+        Self: Sized;
+}
+
+impl Split for UdpSocket {
+    fn split(self) -> (RecvHalf<UdpSocket>, SendHalf<UdpSocket>) {
+        let shared = Arc::new(self);
+        let send = shared.clone();
+        let recv = shared;
+        (RecvHalf(recv), SendHalf(send))
+    }
+}
+
+impl RecvHalf<UdpSocket> {
+    pub async fn recv_from(&mut self, buf: &mut [u8]) -> io::Result<(usize, SocketAddr)> {
+        self.0.recv_from(buf).await
+    }
+
+    pub async fn recv(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.0.recv(buf).await
+    }
+}
+
+impl SendHalf<UdpSocket> {
+    pub async fn send_to(&mut self, buf: &[u8], target: &SocketAddr) -> io::Result<usize> {
+        self.0.send_to(buf, target).await
+    }
+
+    pub async fn send(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.0.send(buf).await
+    }
 }
