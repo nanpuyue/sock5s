@@ -1,3 +1,4 @@
+#[cfg(target_family = "unix")]
 use std::mem::MaybeUninit;
 use std::net::SocketAddr;
 use std::sync::Arc;
