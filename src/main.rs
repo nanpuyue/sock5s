@@ -9,13 +9,15 @@ use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 use tokio::net::{lookup_host, TcpListener, TcpStream, ToSocketAddrs, UdpSocket};
 use tokio_stream::{Stream, StreamExt};
 
+#[cfg(target_family = "unix")]
+use self::util::set_rlimit_nofile;
 use self::{
     acceptor::Socks5Acceptor,
     error::Result,
     listener::Socks5Listener,
     target::{DirectConnector, Socks5Target, TargetConnector},
     udp::Socks5UdpClient,
-    util::{link_stream, set_rlimit_nofile, IntoResult, Split},
+    util::{link_stream, IntoResult, Split},
 };
 
 pub type Socks5Stream = TcpStream;
