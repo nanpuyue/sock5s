@@ -8,8 +8,8 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-async-trait = "0.1.50"
+async-trait = "0.1.51"
 clap = "2.33.3"
-libc = "0.2.95"
-tokio = { version = "1.6.1", features = ["io-util", "macros", "rt-multi-thread", "net"] }
-tokio-stream = "0.1.6"
+libc = "0.2.98"
+tokio = { version = "1.9.0", features = ["io-util", "macros", "rt-multi-thread", "net"] }
+tokio-stream = "0.1.7"
