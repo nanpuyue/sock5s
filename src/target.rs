@@ -100,14 +100,18 @@ impl Socks5Connector {
     }
 
     pub async fn udp_bind(&mut self) -> Result<()> {
-        let bind = match self.target {
-            Socks5Target::V4(_) => SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0)),
-            Socks5Target::V6(_) => {
-                SocketAddr::V6(SocketAddrV6::new(Ipv6Addr::UNSPECIFIED, 0, 0, 0))
+        let udp_socket = match self.target {
+            Socks5Target::V4(_) => {
+                let bind = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0));
+                UdpSocket::bind(bind).await?
             }
-            _ => return Err("Not support domain client for udp associate!".into()),
+            Socks5Target::V6(_) | Socks5Target::Domain(_) => {
+                let bind = SocketAddr::V6(SocketAddrV6::new(Ipv6Addr::UNSPECIFIED, 0, 0, 0));
+                udp_bind_v6(bind)?
+            }
         };
-        self.udp_socket = Some(UdpSocket::bind(bind).await?);
+
+        self.udp_socket = Some(udp_socket);
         Ok(())
     }
 
@@ -139,7 +143,15 @@ impl Socks5Connector {
                     }
                     Socks5Target::Domain(x) => {
                         match lookup_host((x.0.as_str(), x.1)).await?.next() {
-                            Some(addr) => upstream_sender.send_to(data, &addr).await?,
+                            Some(addr) => {
+                                let addr = if let SocketAddr::V4(addr) = addr {
+                                    let ip = addr.ip().to_ipv6_mapped();
+                                    SocketAddr::V6(SocketAddrV6::new(ip, addr.port(), 0, 0))
+                                } else {
+                                    addr
+                                };
+                                upstream_sender.send_to(data, &addr).await?
+                            }
                             None => return Err("No addresses to send data to!".into()),
                         };
                     }

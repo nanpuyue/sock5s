@@ -3,6 +3,7 @@ use std::mem::MaybeUninit;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use socket2::{Domain, Protocol, SockAddr, Socket, Type};
 use tokio::io::{self, AsyncRead, AsyncWrite};
 use tokio::net::UdpSocket;
 
@@ -76,6 +77,13 @@ pub async fn link_stream<A: AsyncRead + AsyncWrite, B: AsyncRead + AsyncWrite>(
     };
 
     Ok(r.map(drop)?)
+}
+
+pub fn udp_bind_v6<A: Into<SockAddr>>(addr: A) -> Result<UdpSocket> {
+    let socket = Socket::new_raw(Domain::IPV6, Type::DGRAM, Some(Protocol::UDP))?;
+    socket.set_only_v6(false)?;
+    socket.bind(&addr.into())?;
+    Ok(UdpSocket::from_std(socket.into())?)
 }
 
 #[cfg(target_family = "unix")]
