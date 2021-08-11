@@ -24,15 +24,14 @@ impl Socks5UdpClient {
 }
 
 impl Socks5Acceptor {
-    pub async fn associate_udp<C: TargetConnector>(mut self) -> Result<()> {
+    pub async fn associate_udp(mut self) -> Result<()> {
         let mut local = self.stream.local_addr()?;
         local.set_port(0);
         let udp_socket = UdpSocket::bind(&local).await?;
 
         let mut client_addr = self.stream.peer_addr()?;
-        let target = &self.buf[3..];
-        let client_port = u16::from_be_bytes([target[target.len() - 2], target[target.len() - 1]]);
-        client_addr.set_port(client_port);
+        let target = Socks5Target::try_parse(&self.buf[3..])?;
+        client_addr.set_port(target.port());
 
         eprintln!("{} == {} (udp)", client_addr, udp_socket.local_addr()?);
         let reply = match udp_socket.local_addr()? {
@@ -51,7 +50,7 @@ impl Socks5Acceptor {
         };
         self.stream.write_all(&reply).await?;
 
-        let mut connector = C::from(3, target)?;
+        let mut connector = Socks5Connector::new(target);
         if let Err(e) = connector.udp_bind().await {
             self.closed(1).await?;
             return Err(e);
