@@ -143,7 +143,7 @@ impl TargetConnector for DirectConnector {
                 let target = Socks5Target::try_parse(&buf[3..3 + offset])?;
                 eprintln!("{} -> {} (udp)", client_addr, target);
 
-                let data = &buf[3 + offset..len - 3 - offset];
+                let data = &buf[3 + offset..len];
                 match target {
                     Socks5Target::V4(x) => {
                         upstream_sender.send_to(data, &x.into()).await?;
