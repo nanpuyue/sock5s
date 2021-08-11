@@ -50,7 +50,7 @@ async fn main() -> Result<()> {
     let mut listener = Socks5Listener::listen(listen).await?;
 
     #[cfg(target_family = "unix")]
-    let _ = set_rlimit_nofile(1024);
+    let _ = set_rlimit_nofile(4096);
 
     while let Some((acceptor, client)) = listener.next().await.transpose()? {
         tokio::spawn(async move {
