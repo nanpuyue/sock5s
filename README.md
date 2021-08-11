@@ -3,7 +3,7 @@
 ## Usage
 
 ```
-sock5s 0.2.0
+sock5s 0.2.1
 南浦月 <nanpuyue@gmail.com>
 A Simple Socks5 Proxy Server
 
