@@ -16,7 +16,7 @@ use self::{
     listener::Socks5Listener,
     target::{Socks5Connector, Socks5Target},
     udp::Socks5UdpClient,
-    util::{link_stream, IntoResult, Split},
+    util::{link_stream, udp_bind_v6, IntoResult, Split},
 };
 
 pub type Socks5Stream = TcpStream;

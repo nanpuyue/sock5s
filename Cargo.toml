@@ -15,5 +15,6 @@ edition = "2018"
 [dependencies]
 clap = "2.33.3"
 libc = "0.2.98"
+socket2 = "0.4.1"
 tokio = { version = "1.9.0", features = ["io-util", "macros", "rt-multi-thread", "net"] }
 tokio-stream = "0.1.7"

@@ -168,8 +168,19 @@ version = "0.2.0"
 dependencies = [
  "clap",
  "libc",
+ "socket2",
  "tokio",
  "tokio-stream",
+]
+
+[[package]]
+name = "socket2"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "765f090f0e423d2b55843402a07915add955e7d60657db13707a159727326cad"
+dependencies = [
+ "libc",
+ "winapi",
 ]
 
 [[package]]
