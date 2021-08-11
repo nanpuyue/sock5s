@@ -64,38 +64,24 @@ impl Socks5Target {
             _ => return Err("Invalid address type!".into()),
         })
     }
+
+    pub fn port(&self) -> u16 {
+        match self {
+            Self::V4(x) => x.port(),
+            Self::V6(x) => x.port(),
+            Self::Domain(x) => x.1,
+        }
+    }
 }
 
-#[async_trait]
-pub trait TargetConnector: Send {
-    type Upstream: AsyncRead + AsyncWrite;
-    type UdpUpstream;
-
-    async fn connect(&mut self) -> Result<()>;
-
-    async fn connected(self, payload: &[u8]) -> Result<Self::Upstream>;
-
-    async fn udp_bind(&mut self) -> Result<()>;
-
-    async fn forward_udp(self, client: Socks5UdpClient) -> Result<()>;
-
-    fn from(command: u8, target: &[u8]) -> Result<Self>
-    where
-        Self: Sized;
-}
-
-pub struct DirectConnector {
+pub struct Socks5Connector {
     target: Socks5Target,
     stream: Option<TcpStream>,
     udp_socket: Option<UdpSocket>,
 }
 
-#[async_trait]
-impl TargetConnector for DirectConnector {
-    type Upstream = TcpStream;
-    type UdpUpstream = UdpSocket;
-
-    async fn connect(&mut self) -> Result<()> {
+impl Socks5Connector {
+    pub async fn connect(&mut self) -> Result<()> {
         self.stream = Some(match &self.target {
             Socks5Target::V4(x) => TcpStream::connect(x).await?,
             Socks5Target::V6(x) => TcpStream::connect(x).await?,
@@ -104,7 +90,7 @@ impl TargetConnector for DirectConnector {
         Ok(())
     }
 
-    async fn connected(mut self, payload: &[u8]) -> Result<Self::Upstream> {
+    pub async fn connected(mut self, payload: &[u8]) -> Result<TcpStream> {
         self.stream
             .as_mut()
             .into_result()?
@@ -113,7 +99,7 @@ impl TargetConnector for DirectConnector {
         Ok(self.stream.take().into_result()?)
     }
 
-    async fn udp_bind(&mut self) -> Result<()> {
+    pub async fn udp_bind(&mut self) -> Result<()> {
         let bind = match self.target {
             Socks5Target::V4(_) => SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0)),
             Socks5Target::V6(_) => {
@@ -125,7 +111,7 @@ impl TargetConnector for DirectConnector {
         Ok(())
     }
 
-    async fn forward_udp(mut self, client: Socks5UdpClient) -> Result<()> {
+    pub async fn forward_udp(mut self, client: Socks5UdpClient) -> Result<()> {
         let client_addr = client.client_addr();
 
         let (client_receiver, client_sender) = &mut client.connect().await?.split();
@@ -197,12 +183,11 @@ impl TargetConnector for DirectConnector {
         }
     }
 
-    fn from(_: u8, target: &[u8]) -> Result<Self> {
-        Ok(Self {
-            // FIXME
-            target: Socks5Target::try_parse(target)?,
+    pub fn new(target: Socks5Target) -> Self {
+        Self {
+            target,
             stream: None,
             udp_socket: None,
-        })
+        }
     }
 }

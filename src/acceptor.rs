@@ -53,8 +53,9 @@ impl Socks5Acceptor {
         Ok((self.buf[1], &self.buf[3..]))
     }
 
-    pub async fn connect_target<C: TargetConnector>(self) -> Result<()> {
-        let mut connector = C::from(1, &self.buf[3..])?;
+    pub async fn connect_target(self) -> Result<()> {
+        let target = Socks5Target::try_parse(&self.buf[3..])?;
+        let mut connector = Socks5Connector::new(target);
         let mut stream = self.connected().await?;
         connector.connect().await?;
 
@@ -72,10 +73,10 @@ impl Socks5Acceptor {
         let target = Socks5Target::try_parse(target)?;
 
         if command == 3 {
-            self.associate_udp::<DirectConnector>().await
+            self.associate_udp().await
         } else {
             eprintln!("{} -> {}", self.peer_addr(), target);
-            self.connect_target::<DirectConnector>().await
+            self.connect_target().await
         }
     }
 
