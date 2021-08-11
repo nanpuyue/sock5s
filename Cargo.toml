@@ -1,6 +1,6 @@
 [package]
 name = "sock5s"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["南浦月 <nanpuyue@gmail.com>"]
 description = "A Simple Socks5 Proxy Server"
 homepage = "https://github.com/nanpuyue/sock5s"
@@ -14,7 +14,7 @@ edition = "2018"
 
 [dependencies]
 clap = "2.33.3"
-libc = "0.2.98"
+libc = "0.2.99"
 socket2 = "0.4.1"
 tokio = { version = "1.9.0", features = ["io-util", "macros", "rt-multi-thread", "net"] }
 tokio-stream = "0.1.7"

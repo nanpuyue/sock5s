@@ -31,7 +31,7 @@ mod util;
 #[tokio::main]
 async fn main() -> Result<()> {
     let matches = App::new("sock5s")
-        .version("0.2.0")
+        .version("0.2.1")
         .author("南浦月 <nanpuyue@gmail.com>")
         .about("A Simple Socks5 Proxy Server")
         .arg(
