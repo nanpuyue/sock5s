@@ -83,6 +83,7 @@ pub fn udp_bind_v6<A: Into<SockAddr>>(addr: A) -> Result<UdpSocket> {
     let socket = Socket::new_raw(Domain::IPV6, Type::DGRAM, Some(Protocol::UDP))?;
     socket.set_only_v6(false)?;
     socket.bind(&addr.into())?;
+    socket.set_nonblocking(true)?;
     Ok(UdpSocket::from_std(socket.into())?)
 }
 
