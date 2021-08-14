@@ -56,7 +56,7 @@ impl Socks5Connector {
                     return Err("Invalid socks5 udp request!".into());
                 }
                 let offset = Socks5Target::target_len(&buf[3..])?;
-                let target = Socks5Target::try_parse(&buf[3..3 + offset])?;
+                let target = Socks5Target::try_from(&buf[3..3 + offset])?;
                 eprintln!("{} -> {} (udp)", client_addr, target);
 
                 let data = &buf[3 + offset..len];

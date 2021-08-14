@@ -56,20 +56,24 @@ impl Socks5Target {
         })
     }
 
-    pub fn try_parse(data: &[u8]) -> Result<Socks5Target> {
-        Ok(match data[0] {
-            1 => Self::parse_ipv4(&data[1..]),
-            4 => Self::parse_ipv6(&data[1..]),
-            3 => Self::parse_domain(&data[1..])?,
-            _ => return Err("Invalid address type!".into()),
-        })
-    }
-
     pub fn port(&self) -> u16 {
         match self {
             Self::V4(x) => x.port(),
             Self::V6(x) => x.port(),
             Self::Domain(x) => x.1,
         }
+    }
+}
+
+impl TryFrom<&[u8]> for Socks5Target {
+    type Error = Error;
+
+    fn try_from(data: &[u8]) -> Result<Self> {
+        Ok(match data[0] {
+            1 => Self::parse_ipv4(&data[1..]),
+            4 => Self::parse_ipv6(&data[1..]),
+            3 => Self::parse_domain(&data[1..])?,
+            _ => return Err("Invalid address type!".into()),
+        })
     }
 }

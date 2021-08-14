@@ -54,7 +54,7 @@ impl Socks5Acceptor {
     }
 
     pub async fn connect_target(self) -> Result<()> {
-        let target = Socks5Target::try_parse(&self.buf[3..])?;
+        let target = Socks5Target::try_from(&self.buf[3..])?;
         let mut connector = Socks5Connector::new(target);
         let mut stream = self.connected().await?;
         connector.connect().await?;
@@ -70,7 +70,7 @@ impl Socks5Acceptor {
     pub async fn accept(mut self) -> Result<()> {
         self.authenticate().await?;
         let (command, target) = self.accept_command().await?;
-        let target = Socks5Target::try_parse(target)?;
+        let target = Socks5Target::try_from(target)?;
 
         if command == 3 {
             self.associate_udp().await

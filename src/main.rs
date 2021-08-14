@@ -1,3 +1,4 @@
+use std::convert::TryFrom;
 use std::fmt::{self, Display, Formatter};
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::pin::Pin;
@@ -13,7 +14,7 @@ use self::util::set_rlimit_nofile;
 use self::{
     acceptor::Socks5Acceptor,
     connector::Socks5Connector,
-    error::Result,
+    error::{Error, Result},
     listener::Socks5Listener,
     target::Socks5Target,
     udp::Socks5UdpClient,
