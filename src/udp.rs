@@ -30,7 +30,7 @@ impl Socks5Acceptor {
         let udp_socket = UdpSocket::bind(&local).await?;
 
         let mut client_addr = self.stream.peer_addr()?;
-        let target = Socks5Target::try_parse(&self.buf[3..])?;
+        let target = Socks5Target::try_from(&self.buf[3..])?;
         client_addr.set_port(target.port());
 
         eprintln!("{} == {} (udp)", client_addr, udp_socket.local_addr()?);
