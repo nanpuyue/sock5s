@@ -12,9 +12,10 @@ use tokio_stream::{Stream, StreamExt};
 use self::util::set_rlimit_nofile;
 use self::{
     acceptor::Socks5Acceptor,
+    connector::Socks5Connector,
     error::Result,
     listener::Socks5Listener,
-    target::{Socks5Connector, Socks5Target},
+    target::Socks5Target,
     udp::Socks5UdpClient,
     util::{link_stream, udp_bind_v6, IntoResult, Split},
 };
@@ -22,6 +23,7 @@ use self::{
 pub type Socks5Stream = TcpStream;
 
 mod acceptor;
+mod connector;
 mod error;
 mod listener;
 mod target;
