@@ -34,12 +34,12 @@ mod util;
 #[tokio::main]
 async fn main() -> Result<()> {
     let matches = App::new("sock5s")
-        .version("0.2.1")
+        .version("0.2.2")
         .author("南浦月 <nanpuyue@gmail.com>")
         .about("A Simple Socks5 Proxy Server")
         .arg(
             Arg::with_name("listen")
-                .short("l")
+                .short('l')
                 .long("listen")
                 .value_name("LISTEN ADDR")
                 .help("Specify the listen addr")
