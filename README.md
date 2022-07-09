@@ -3,19 +3,17 @@
 ## Usage
 
 ```
-sock5s 0.2.1
+sock5s 0.2.2
 南浦月 <nanpuyue@gmail.com>
 A Simple Socks5 Proxy Server
 
 USAGE:
     sock5s --listen <LISTEN ADDR>
 
-FLAGS:
-    -h, --help       Prints help information
-    -V, --version    Prints version information
-
 OPTIONS:
+    -h, --help                    Print help information
     -l, --listen <LISTEN ADDR>    Specify the listen addr
+    -V, --version                 Print version information
 ```
 
 ## License
