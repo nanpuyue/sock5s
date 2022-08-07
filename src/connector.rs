@@ -42,22 +42,37 @@ impl Socks5Connector {
     }
 
     pub async fn forward_udp(mut self, client: Socks5UdpClient) -> Result<()> {
-        let client_addr = client.client_addr();
+        let client_addr = client.client_addr;
+        let udp_socket = client.udp_socket;
 
-        let (client_receiver, client_sender) = &mut client.connect().await?.split();
+        let mut connected = false;
+        if client.client_addr.port() != 0 {
+            udp_socket.connect(client_addr).await?;
+            connected = true;
+        }
+
+        let mut buf = vec![0; 1472];
+        let (mut len, addr) = udp_socket.recv_from(&mut buf).await?;
+        if !connected {
+            if addr.ip() != client_addr.ip() {
+                return Err(format!("Invalid client: {addr}!").into());
+            }
+            udp_socket.connect(addr).await?;
+            eprintln!("{} == {} (udp)", addr, udp_socket.local_addr()?);
+        }
+
+        let (client_receiver, client_sender) = &mut udp_socket.split();
         let (upstream_receiver, upstream_sender) =
             &mut self.udp_socket.take().into_result()?.split();
 
         let t1 = async {
-            let mut buf = vec![0; 1472];
             loop {
-                let len = client_receiver.recv(&mut buf).await?;
                 if &buf[..3] != b"\0\0\0" {
                     return Err("Invalid socks5 udp request!".into());
                 }
                 let offset = Socks5Target::target_len(&buf[3..])?;
                 let target = Socks5Target::try_from(&buf[3..3 + offset])?;
-                eprintln!("{} -> {} (udp)", client_addr, target);
+                // eprintln!("{} -> {} (udp)", addr, target);
 
                 let data = &buf[3 + offset..len];
                 match target {
@@ -82,6 +97,8 @@ impl Socks5Connector {
                         };
                     }
                 };
+
+                len = client_receiver.recv(&mut buf).await?;
             }
         };
 
