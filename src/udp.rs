@@ -1,8 +1,8 @@
 use super::*;
 
 pub struct Socks5UdpClient {
-    udp_socket: UdpSocket,
-    client_addr: SocketAddr,
+    pub udp_socket: UdpSocket,
+    pub client_addr: SocketAddr,
 }
 
 impl Socks5UdpClient {
@@ -11,15 +11,6 @@ impl Socks5UdpClient {
             udp_socket,
             client_addr,
         }
-    }
-
-    pub fn client_addr(&self) -> SocketAddr {
-        self.client_addr
-    }
-
-    pub async fn connect(self) -> Result<UdpSocket> {
-        self.udp_socket.connect(self.client_addr).await?;
-        Ok(self.udp_socket)
     }
 }
 
@@ -33,7 +24,9 @@ impl Socks5Acceptor {
         let target = Socks5Target::try_from(&self.buf[3..])?;
         client_addr.set_port(target.port());
 
-        eprintln!("{} == {} (udp)", client_addr, udp_socket.local_addr()?);
+        if client_addr.port() != 0 {
+            eprintln!("{} == {} (udp)", client_addr, udp_socket.local_addr()?);
+        }
         let reply = match udp_socket.local_addr()? {
             SocketAddr::V4(x) => [
                 b"\x05\x00\x00\x01".as_ref(),
