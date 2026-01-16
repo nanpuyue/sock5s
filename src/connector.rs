@@ -1,3 +1,5 @@
+use std::io::IoSlice;
+
 use super::*;
 
 pub struct Socks5Connector {
@@ -104,27 +106,26 @@ impl Socks5Connector {
 
         let t2 = async {
             let mut buf = vec![0; 1472];
+            let mut header = Vec::new();
+
             loop {
                 let (len, from) = upstream_receiver.recv_from(&mut buf).await?;
-
-                let data = match from {
-                    SocketAddr::V4(x) => [
-                        b"\x00\x00\x00\x01",
-                        x.ip().octets().as_ref(),
-                        &x.port().to_be_bytes(),
-                        &buf[..len],
-                    ]
-                    .concat(),
-                    SocketAddr::V6(x) => [
-                        b"\x00\x00\x00\x04",
-                        x.ip().octets().as_ref(),
-                        &x.port().to_be_bytes(),
-                        &buf[..len],
-                    ]
-                    .concat(),
+                match from {
+                    SocketAddr::V4(x) => {
+                        header.extend_from_slice(b"\x00\x00\x00\x01");
+                        header.extend_from_slice(&x.ip().octets());
+                        header.extend_from_slice(&x.port().to_be_bytes());
+                    }
+                    SocketAddr::V6(x) => {
+                        header.extend_from_slice(b"\x00\x00\x00\x04");
+                        header.extend_from_slice(&x.ip().octets());
+                        header.extend_from_slice(&x.port().to_be_bytes());
+                    }
                 };
 
-                client_sender.send(&data).await?;
+                let data = [IoSlice::new(&header), IoSlice::new(&buf[..len])];
+                client_sender.send_vectored(&data).await?;
+                header.clear();
             }
         };
 
