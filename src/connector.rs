@@ -24,7 +24,7 @@ impl Socks5Connector {
             .into_result()?
             .write_all(payload)
             .await?;
-        Ok(self.stream.take().into_result()?)
+        self.stream.take().into_result()
     }
 
     pub async fn udp_bind(&mut self) -> Result<()> {

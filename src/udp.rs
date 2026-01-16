@@ -50,7 +50,7 @@ impl Socks5Acceptor {
         };
 
         let done = async {
-            self.stream.read(&mut [0]).await?;
+            let _ = self.stream.read(&mut [0]).await?;
             Ok(())
         };
 
