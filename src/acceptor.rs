@@ -61,8 +61,8 @@ impl Socks5Acceptor {
 
         let buf = &mut Vec::new();
         stream.read_buf(buf).await?;
-        let upstream = connector.connected(buf).await?;
-        link_stream(stream, upstream).await?;
+        let mut upstream = connector.connected(buf).await?;
+        tokio::io::copy_bidirectional(&mut stream, &mut upstream).await?;
 
         Ok(())
     }

@@ -5,8 +5,7 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 
 use socket2::{Domain, Protocol, SockAddr, SockRef, Socket, Type};
-use tokio::io::Interest;
-use tokio::io::{self, AsyncRead, AsyncWrite};
+use tokio::io::{self, Interest};
 use tokio::net::UdpSocket;
 
 use crate::error::{Error, Result};
@@ -78,25 +77,6 @@ impl SendHalf<UdpSocket> {
     pub async fn send_vectored(&mut self, bufs: &[IoSlice<'_>]) -> io::Result<usize> {
         self.0.send_vectored(bufs).await
     }
-}
-
-pub async fn link_stream<A: AsyncRead + AsyncWrite, B: AsyncRead + AsyncWrite>(
-    a: A,
-    b: B,
-) -> Result<()> {
-    let (ar, aw) = &mut io::split(a);
-    let (br, bw) = &mut io::split(b);
-
-    let r = tokio::select! {
-        r1 = io::copy(ar, bw) => {
-            r1
-        },
-        r2 = io::copy(br, aw) => {
-            r2
-        }
-    };
-
-    Ok(r.map(drop)?)
 }
 
 pub fn udp_bind_v6<A: Into<SockAddr>>(addr: A) -> Result<UdpSocket> {
