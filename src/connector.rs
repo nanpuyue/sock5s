@@ -1,5 +1,3 @@
-use std::io::IoSlice;
-
 use super::*;
 
 pub struct Socks5Connector {
@@ -35,7 +33,9 @@ impl Socks5Connector {
             }
             Socks5Target::V6(_) | Socks5Target::Domain(_) => {
                 let bind = SocketAddr::V6(SocketAddrV6::new(Ipv6Addr::UNSPECIFIED, 0, 0, 0));
-                udp_bind_v6(bind)?
+                let socket = UdpSocket::bind(bind).await?;
+                SockRef::from(&socket).set_only_v6(false)?;
+                socket
             }
         };
 
