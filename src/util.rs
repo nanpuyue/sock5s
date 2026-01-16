@@ -1,9 +1,11 @@
+use std::io::IoSlice;
 #[cfg(target_family = "unix")]
 use std::mem::MaybeUninit;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use socket2::{Domain, Protocol, SockAddr, Socket, Type};
+use socket2::{Domain, Protocol, SockAddr, SockRef, Socket, Type};
+use tokio::io::Interest;
 use tokio::io::{self, AsyncRead, AsyncWrite};
 use tokio::net::UdpSocket;
 
@@ -31,12 +33,25 @@ pub trait Split {
         Self: Sized;
 }
 
+pub trait Vectored {
+    async fn send_vectored(&self, bufs: &[IoSlice<'_>]) -> io::Result<usize>;
+}
+
 impl Split for UdpSocket {
     fn split(self) -> (RecvHalf<UdpSocket>, SendHalf<UdpSocket>) {
         let shared = Arc::new(self);
         let send = shared.clone();
         let recv = shared;
         (RecvHalf(recv), SendHalf(send))
+    }
+}
+
+impl Vectored for UdpSocket {
+    async fn send_vectored(&self, bufs: &[IoSlice<'_>]) -> io::Result<usize> {
+        self.async_io(Interest::WRITABLE, || {
+            SockRef::from(self).send_vectored(bufs)
+        })
+        .await
     }
 }
 
@@ -50,6 +65,7 @@ impl RecvHalf<UdpSocket> {
     }
 }
 
+#[allow(unused)]
 impl SendHalf<UdpSocket> {
     pub async fn send_to(&mut self, buf: &[u8], target: &SocketAddr) -> io::Result<usize> {
         self.0.send_to(buf, target).await
@@ -57,6 +73,10 @@ impl SendHalf<UdpSocket> {
 
     pub async fn send(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.0.send(buf).await
+    }
+
+    pub async fn send_vectored(&mut self, bufs: &[IoSlice<'_>]) -> io::Result<usize> {
+        self.0.send_vectored(bufs).await
     }
 }
 
