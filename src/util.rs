@@ -4,7 +4,7 @@ use std::mem::MaybeUninit;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use socket2::{Domain, Protocol, SockAddr, SockRef, Socket, Type};
+use socket2::SockRef;
 use tokio::io::{self, Interest};
 use tokio::net::UdpSocket;
 
@@ -77,14 +77,6 @@ impl SendHalf<UdpSocket> {
     pub async fn send_vectored(&mut self, bufs: &[IoSlice<'_>]) -> io::Result<usize> {
         self.0.send_vectored(bufs).await
     }
-}
-
-pub fn udp_bind_v6<A: Into<SockAddr>>(addr: A) -> Result<UdpSocket> {
-    let socket = Socket::new_raw(Domain::IPV6, Type::DGRAM, Some(Protocol::UDP))?;
-    socket.set_only_v6(false)?;
-    socket.bind(&addr.into())?;
-    socket.set_nonblocking(true)?;
-    Ok(UdpSocket::from_std(socket.into())?)
 }
 
 #[cfg(target_family = "unix")]

@@ -1,10 +1,12 @@
 use std::convert::TryFrom;
 use std::fmt::{self, Display, Formatter};
+use std::io::IoSlice;
 use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use clap::{Arg, Command};
+use socket2::SockRef;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{lookup_host, TcpListener, TcpStream, ToSocketAddrs, UdpSocket};
 use tokio_stream::{Stream, StreamExt};
@@ -18,7 +20,7 @@ use self::{
     listener::Socks5Listener,
     target::Socks5Target,
     udp::Socks5UdpClient,
-    util::{udp_bind_v6, IntoResult, Split},
+    util::{IntoResult, Split},
 };
 
 pub type Socks5Stream = TcpStream;
