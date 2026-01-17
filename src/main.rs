@@ -20,7 +20,7 @@ use self::{
     listener::Socks5Listener,
     target::Socks5Target,
     udp::Socks5UdpClient,
-    util::{IntoResult, Split},
+    util::{ExtendFromTarget, IntoResult, Split},
 };
 
 pub type Socks5Stream = TcpStream;

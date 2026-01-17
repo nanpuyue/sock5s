@@ -106,26 +106,15 @@ impl Socks5Connector {
 
         let t2 = async {
             let mut buf = vec![0; 1472];
-            let mut header = Vec::new();
+            let mut header = (b"\x00\x00\x00").to_vec();
 
             loop {
                 let (len, from) = upstream_receiver.recv_from(&mut buf).await?;
-                match from {
-                    SocketAddr::V4(x) => {
-                        header.extend_from_slice(b"\x00\x00\x00\x01");
-                        header.extend_from_slice(&x.ip().octets());
-                        header.extend_from_slice(&x.port().to_be_bytes());
-                    }
-                    SocketAddr::V6(x) => {
-                        header.extend_from_slice(b"\x00\x00\x00\x04");
-                        header.extend_from_slice(&x.ip().octets());
-                        header.extend_from_slice(&x.port().to_be_bytes());
-                    }
-                };
+                header.truncate(3);
+                header.extend_from_target(&from);
 
                 let data = [IoSlice::new(&header), IoSlice::new(&buf[..len])];
                 client_sender.send_vectored(&data).await?;
-                header.clear();
             }
         };
 
