@@ -16,31 +16,20 @@ impl Socks5UdpClient {
 
 impl Socks5Acceptor {
     pub async fn associate_udp(mut self) -> Result<()> {
-        let mut local = self.stream.local_addr()?;
-        local.set_port(0);
-        let udp_socket = UdpSocket::bind(&local).await?;
+        let mut local_addr = self.stream.local_addr()?;
+        local_addr.set_port(0);
+        let udp_socket = UdpSocket::bind(&local_addr).await?;
+        local_addr = udp_socket.local_addr()?;
 
         let mut client_addr = self.stream.peer_addr()?;
         let target = Socks5Target::try_from(&self.buf[3..])?;
         client_addr.set_port(target.port());
 
         if client_addr.port() != 0 {
-            eprintln!("{} == {} (udp)", client_addr, udp_socket.local_addr()?);
+            eprintln!("{} == {} (udp)", client_addr, local_addr);
         }
-        let reply = match udp_socket.local_addr()? {
-            SocketAddr::V4(x) => [
-                b"\x05\x00\x00\x01".as_ref(),
-                x.ip().octets().as_ref(),
-                x.port().to_be_bytes().as_ref(),
-            ]
-            .concat(),
-            SocketAddr::V6(x) => [
-                b"\x05\x00\x00\x04".as_ref(),
-                x.ip().octets().as_ref(),
-                x.port().to_be_bytes().as_ref(),
-            ]
-            .concat(),
-        };
+        let mut reply = b"\x05\x00\x00".to_vec();
+        reply.extend_from_target(&local_addr);
         self.stream.write_all(&reply).await?;
 
         let mut connector = Socks5Connector::new(target);
