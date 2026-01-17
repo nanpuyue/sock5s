@@ -20,6 +20,12 @@ jobs:
           - target: aarch64-unknown-linux-musl
             os: ubuntu-24.04-arm
 
+          - target: armv7-unknown-linux-musleabi
+            os: ubuntu-24.04-arm
+
+          - target: armv7-unknown-linux-musleabihf
+            os: ubuntu-24.04-arm
+
           - target: x86_64-apple-darwin
             os: macos-latest
 
@@ -50,6 +56,10 @@ jobs:
           set -eux
           if [[ "${{ matrix.target }}" == *linux-musl* ]]; then
             export RUSTFLAGS="-C target-feature=+crt-static"
+          fi
+          if [[ "${{ matrix.target }}" == armv7-unknown-linux-musl* ]]; then
+            export CARGO_TARGET_ARMV7_UNKNOWN_LINUX_MUSLEABI_LINKER=rust-lld
+            export CARGO_TARGET_ARMV7_UNKNOWN_LINUX_MUSLEABIHF_LINKER=rust-lld
           fi
           cargo build --release --target ${{ matrix.target }}
 
