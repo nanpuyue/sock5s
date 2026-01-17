@@ -1,0 +1,113 @@
+name: Build & Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-24.04-arm
+
+          - target: x86_64-apple-darwin
+            os: macos-latest
+
+          - target: aarch64-apple-darwin
+            os: macos-latest
+
+          - target: aarch64-pc-windows-msvc
+            os:  windows-11-arm
+
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+
+          - target: i686-pc-windows-msvc
+            os: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Build
+        shell: bash
+        run: |
+          set -eux
+          if [[ "${{ matrix.target }}" == *linux-musl* ]]; then
+            export RUSTFLAGS="-C target-feature=+crt-static"
+          fi
+          cargo build --release --target ${{ matrix.target }}
+
+      - name: Strip binary (non-Windows only)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          BIN="target/${{ matrix.target }}/release/sock5s"
+          if [[ -f "$BIN" ]]; then
+            strip "$BIN" || true
+          fi
+
+      - name: Package artifact
+        shell: bash
+        run: |
+          set -eux
+          mkdir -p dist
+          BIN="target/${{ matrix.target }}/release/sock5s"
+          EXT=""
+          if [[ "${{ runner.os }}" == "Windows" ]]; then
+            BIN="$BIN.exe"
+            EXT=".exe"
+          fi
+          mv "$BIN" "dist/sock5s-${{ matrix.target }}$EXT"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: sock5s-${{ matrix.target }}
+          path: dist/*
+
+  release:
+    name: Release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: dist
+
+      - name: Flatten artifacts
+        shell: bash
+        run: |
+          set -eux
+          mkdir -p upload
+          find dist -type f -exec cp {} upload/ \;
+
+      - name: Create and update GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -eux
+          TAG="${{ github.ref_name }}"
+          gh release create "$TAG" --draft --prerelease || true
+          gh release upload "$TAG" upload/* --clobber
