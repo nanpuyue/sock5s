@@ -28,9 +28,7 @@ impl Socks5Acceptor {
         if client_addr.port() != 0 {
             eprintln!("{} == {} (udp)", client_addr, local_addr);
         }
-        let mut reply = b"\x05\x00\x00".to_vec();
-        reply.extend_from_target(&local_addr);
-        self.stream.write_all(&reply).await?;
+        self.connected(&local_addr).await?;
 
         let mut connector = Socks5Connector::new(target);
         if let Err(e) = connector.udp_bind().await {

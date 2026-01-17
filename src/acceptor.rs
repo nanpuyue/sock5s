@@ -53,16 +53,16 @@ impl Socks5Acceptor {
         Ok((self.buf[1], &self.buf[3..]))
     }
 
-    pub async fn connect_target(self) -> Result<()> {
+    pub async fn connect_target(mut self) -> Result<()> {
         let target = Socks5Target::try_from(&self.buf[3..])?;
         let mut connector = Socks5Connector::new(target);
-        let mut stream = self.connected().await?;
+        self.connected(&self.stream.local_addr()?).await?;
         connector.connect().await?;
 
         let buf = &mut Vec::new();
-        stream.read_buf(buf).await?;
+        self.stream.read_buf(buf).await?;
         let mut upstream = connector.connected(buf).await?;
-        tokio::io::copy_bidirectional(&mut stream, &mut upstream).await?;
+        tokio::io::copy_bidirectional(&mut self.stream, &mut upstream).await?;
 
         Ok(())
     }
@@ -80,11 +80,11 @@ impl Socks5Acceptor {
         }
     }
 
-    pub async fn connected(mut self) -> Result<Socks5Stream> {
-        self.stream
-            .write_all(b"\x05\x00\x00\x01\x00\x00\x00\x00\x00\x00")
-            .await?;
-        Ok(self.stream)
+    pub async fn connected(&mut self, local_addr: &SocketAddr) -> Result<()> {
+        let mut reply = b"\x05\x00\x00".to_vec();
+        reply.extend_from_target(local_addr);
+        self.stream.write_all(&reply).await?;
+        Ok(())
     }
 
     pub async fn closed(mut self, resp: u8) -> Result<()> {
