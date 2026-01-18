@@ -8,7 +8,7 @@ repository = "https://github.com/nanpuyue/sock5s"
 keywords = ["socks5", "proxy", "server"]
 categories = ["command-line-utilities"]
 license = "MIT"
-edition = "2018"
+edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
