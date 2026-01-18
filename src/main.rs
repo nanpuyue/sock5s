@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::fmt::{self, Display, Formatter};
 use std::io::IoSlice;
@@ -6,9 +7,9 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use clap::{Arg, Command};
-use socket2::SockRef;
+use socket2::{Domain, Protocol, Socket, Type};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::{lookup_host, TcpListener, TcpStream, ToSocketAddrs, UdpSocket};
+use tokio::net::{TcpListener, TcpStream, ToSocketAddrs, UdpSocket};
 use tokio_stream::{Stream, StreamExt};
 
 #[cfg(target_family = "unix")]
@@ -19,7 +20,6 @@ use self::{
     error::{Error, Result},
     listener::Socks5Listener,
     target::Socks5Target,
-    udp::Socks5UdpClient,
     util::{ExtendFromTarget, IntoResult, Split},
 };
 
