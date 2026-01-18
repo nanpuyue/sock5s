@@ -54,23 +54,11 @@ jobs:
         shell: bash
         run: |
           set -eux
-          if [[ "${{ matrix.target }}" == *linux-musl* ]]; then
-            export RUSTFLAGS="-C target-feature=+crt-static"
-          fi
-          if [[ "${{ matrix.target }}" == armv7-unknown-linux-musl* ]]; then
-            export CARGO_TARGET_ARMV7_UNKNOWN_LINUX_MUSLEABI_LINKER=rust-lld
-            export CARGO_TARGET_ARMV7_UNKNOWN_LINUX_MUSLEABIHF_LINKER=rust-lld
+          export RUSTFLAGS="-C linker=rust-lld -C embed-bitcode=yes -C lto -C link-args=-s -C debuginfo=0"
+          if [[ "${{ matrix.target }}" == *-linux-musl* ]]; then
+            export RUSTFLAGS+=" -C target-feature=+crt-static"
           fi
           cargo build --release --target ${{ matrix.target }}
-
-      - name: Strip binary (non-Windows only)
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          BIN="target/${{ matrix.target }}/release/sock5s"
-          if [[ -f "$BIN" ]]; then
-            strip "$BIN" || true
-          fi
 
       - name: Package artifact
         shell: bash
