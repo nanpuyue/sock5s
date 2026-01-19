@@ -53,17 +53,12 @@ impl Socks5Acceptor {
         Ok((self.buf[1], &self.buf[3..]))
     }
 
-    pub async fn connect_target(mut self) -> Result<()> {
+    pub async fn connect_tcp(mut self) -> Result<()> {
         let target = Socks5Target::try_from(&self.buf[3..])?;
-        let mut connector = Socks5Connector::new(target);
+        let mut upstream = Socks5TcpConnector.connect(target).await?;
         self.connected(&self.stream.local_addr()?).await?;
-        connector.connect().await?;
 
-        let buf = &mut Vec::new();
-        self.stream.read_buf(buf).await?;
-        let mut upstream = connector.connected(buf).await?;
         tokio::io::copy_bidirectional(&mut self.stream, &mut upstream).await?;
-
         Ok(())
     }
 
@@ -76,7 +71,7 @@ impl Socks5Acceptor {
             self.associate_udp().await
         } else {
             eprintln!("{} -> {}", self.peer_addr(), target);
-            self.connect_target().await
+            self.connect_tcp().await
         }
     }
 
