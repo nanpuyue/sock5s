@@ -1,19 +1,31 @@
 [package]
 name = "sock5s"
-version = "0.2.2"
-authors = ["南浦月 <nanpuyue@gmail.com>"]
-description = "A Simple Socks5 Proxy Server"
-homepage = "https://github.com/nanpuyue/sock5s"
-repository = "https://github.com/nanpuyue/sock5s"
-keywords = ["socks5", "proxy", "server"]
-categories = ["command-line-utilities"]
-license = "MIT"
+version = "0.3.0"
 edition = "2024"
+license = "MIT"
+
+description = "A lightweight SOCKS5 proxy server written in Rust."
+authors = ["nanpuyue <nanpuyue@gmail.com>"]
+
+homepage = "https://github.com/nanpuyue/sock5s"
+repository = "https://github.com/nanpuyue/sock5s.git"
+
+keywords = ["socks5", "proxy", "server", "tcp", "udp"]
+categories = ["command-line-utilities"]
+
+include = [
+    "src/**",
+    "Cargo.toml",
+    "Cargo.lock",
+    "README.md",
+    "LICENSE*",
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = "4.5.54"
+clap = { version="4.5.54", features = ["derive"] }
+indoc = "2.0.7"
 libc = "0.2.180"
 socket2 = "0.6.1"
 tokio = { version = "1.49.0", features = ["io-util", "macros", "rt-multi-thread", "net"] }

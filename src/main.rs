@@ -6,7 +6,8 @@ use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use clap::{Arg, Command};
+use clap::Parser;
+use indoc::indoc;
 use socket2::{Domain, Protocol, Socket, Type};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream, ToSocketAddrs, UdpSocket};
@@ -33,26 +34,36 @@ mod target;
 mod udp;
 mod util;
 
+#[derive(Parser, Debug)]
+#[command(
+    version,
+    author,
+    about,
+    help_template = indoc! {"
+        {before-help}{name} {version}
+        {author}
+        {about}
+
+        {usage-heading} {usage}
+
+        {all-args}{after-help}
+    "}
+)]
+struct Cli {
+    #[arg(
+        short = 'l',
+        long = "listen",
+        value_name = "HOST:PORT",
+        help = "Listen address",
+        required = true
+    )]
+    listen: SocketAddr,
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
-    let matches = Command::new("sock5s")
-        .version("0.2.2")
-        .author("南浦月 <nanpuyue@gmail.com>")
-        .about("A Simple Socks5 Proxy Server")
-        .arg(
-            Arg::new("listen")
-                .short('l')
-                .long("listen")
-                .value_name("LISTEN ADDR")
-                .help("Specify the listen addr")
-                .num_args(1)
-                .required(true),
-        )
-        .get_matches();
-
-    let listen = matches.get_one::<String>("listen").unwrap();
-
-    let mut listener = Socks5Listener::listen(listen).await?;
+    let cli = Cli::parse();
+    let mut listener = Socks5Listener::listen(cli.listen).await?;
 
     #[cfg(target_family = "unix")]
     let _ = set_rlimit_nofile(4096);

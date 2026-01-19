@@ -1,19 +1,36 @@
-# A Simple Socks5 Proxy Server
+# sock5s
+
+A lightweight SOCKS5 proxy server written in Rust.
+
+## Features
+
+- ✅ RFC 1928 compatible
+- ✅ NO AUTHENTICATION REQUIRED
+- ✅ CONNECT command
+  - ✅ IPv4
+  - ✅ IPv6
+  - ✅ Domain
+- ✅ UDP ASSOCIATE command
+  - ✅ IPv4
+  - ✅ IPv6
+  - ✅ Domain
+- ✅ Dual-stack (IPv4 / IPv6) support
+- ✅ Asynchronous implementation based on Tokio
+- ✅ Cross-platform support (Linux / macOS / Windows)
 
 ## Usage
 
 ```
-sock5s 0.2.2
-南浦月 <nanpuyue@gmail.com>
-A Simple Socks5 Proxy Server
+sock5s 0.3.0
+nanpuyue <nanpuyue@gmail.com>
+A lightweight SOCKS5 proxy server written in Rust.
 
-USAGE:
-    sock5s --listen <LISTEN ADDR>
+Usage: sock5s --listen <HOST:PORT>
 
-OPTIONS:
-    -h, --help                    Print help information
-    -l, --listen <LISTEN ADDR>    Specify the listen addr
-    -V, --version                 Print version information
+Options:
+  -l, --listen <HOST:PORT>  Listen address
+  -h, --help                Print help
+  -V, --version             Print version
 ```
 
 ## License
