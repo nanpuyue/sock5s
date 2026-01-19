@@ -16,7 +16,7 @@ use tokio_stream::{Stream, StreamExt};
 use self::util::set_rlimit_nofile;
 use self::{
     acceptor::Socks5Acceptor,
-    connector::Socks5Connector,
+    connector::Socks5TcpConnector,
     error::{Error, Result},
     listener::Socks5Listener,
     target::Socks5Target,
