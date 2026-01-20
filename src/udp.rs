@@ -183,7 +183,7 @@ impl Socks5Acceptor {
         if client_addr.port() != 0 {
             eprintln!("{} == {} (udp)", client_addr, local_addr);
         }
-        self.connected(&local_addr).await?;
+        self.connected(local_addr).await?;
 
         let forwarder = match Socks5UdpForwarder::bind() {
             Ok(x) => x,
