@@ -20,7 +20,7 @@ impl Socks5Target {
     fn parse_ipv4(data: &[u8]) -> Self {
         debug_assert_eq!(data.len(), 6);
         Self::V4(SocketAddrV4::new(
-            (unsafe { *(data.as_ptr() as *const [u8; 4]) }).into(),
+            Ipv4Addr::from_octets(data[0..4].try_into().unwrap()),
             u16::from_be_bytes([data[4], data[5]]),
         ))
     }
@@ -28,7 +28,7 @@ impl Socks5Target {
     fn parse_ipv6(data: &[u8]) -> Self {
         debug_assert_eq!(data.len(), 18);
         Self::V6(SocketAddrV6::new(
-            (unsafe { *(data.as_ptr() as *const [u8; 16]) }).into(),
+            Ipv6Addr::from_octets(data[0..16].try_into().unwrap()),
             u16::from_be_bytes([data[16], data[17]]),
             0,
             0,
