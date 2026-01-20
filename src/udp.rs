@@ -54,10 +54,12 @@ impl Socks5UdpForwarder {
     pub async fn lookup_host(&mut self, host: &str) -> Option<SocketAddr> {
         let hosts = self.hosts.get_or_insert_default();
 
-        if let Some(x) = hosts.get(host)
-            && !x.ip().is_unspecified()
-        {
-            return Some(*x);
+        if let Some(x) = hosts.get(host) {
+            if !x.ip().is_unspecified() {
+                return Some(*x);
+            } else {
+                return None;
+            }
         } else {
             if let Ok(mut addrs) = tokio::net::lookup_host((host, 0)).await {
                 for addr in addrs.by_ref() {
