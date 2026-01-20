@@ -8,7 +8,7 @@ pub struct Socks5UdpClient {
 pub struct Socks5UdpForwarder {
     ipv4_only: bool,
     pub udp_socket: Option<UdpSocket>,
-    pub hosts: Option<HashMap<String, SocketAddr>>,
+    pub hosts: Option<HashMap<String, IpAddr>>,
 }
 
 impl Socks5UdpClient {
@@ -51,29 +51,32 @@ impl Socks5UdpForwarder {
         self.ipv4_only
     }
 
-    pub async fn lookup_host(&mut self, host: &str) -> Option<SocketAddr> {
+    pub async fn lookup_host(&mut self, host: &str) -> Option<IpAddr> {
         let hosts = self.hosts.get_or_insert_default();
 
         if let Some(x) = hosts.get(host) {
-            if !x.ip().is_unspecified() {
+            if !x.is_unspecified() {
                 return Some(*x);
             } else {
                 return None;
             }
         } else {
-            if let Ok(mut addrs) = tokio::net::lookup_host((host, 0)).await {
-                for addr in addrs.by_ref() {
-                    if self.ipv4_only && addr.is_ipv6() {
+            if let Ok(mut x) = tokio::net::lookup_host((host, 0)).await {
+                for x in x.by_ref() {
+                    if self.ipv4_only && x.is_ipv6() {
                         continue;
                     }
-                    hosts.insert(host.into(), addr);
-                    return Some(addr);
+                    let mut ip = x.ip();
+                    if !self.ipv4_only
+                        && let IpAddr::V4(x) = ip
+                    {
+                        ip = x.to_ipv6_mapped().into()
+                    }
+                    hosts.insert(host.into(), ip);
+                    return Some(ip);
                 }
             }
-            hosts.insert(
-                host.into(),
-                SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0).into(),
-            );
+            hosts.insert(host.into(), (Ipv4Addr::UNSPECIFIED).into());
         }
         None
     }
@@ -112,32 +115,17 @@ impl Socks5UdpForwarder {
                 // eprintln!("{} -> {} (udp)", addr, target);
 
                 let data = &buf[3 + offset..len];
-                match target {
-                    Socks5Target::V4(x) => {
-                        if self.ipv4_only() {
-                            upstream_sender.send_to(data, &x.into()).await?;
-                        } else {
-                            upstream_sender.send_to_mapped(data, &x).await?;
-                        }
+                let ip = match target.0 {
+                    Socks5Host::IpAddr(IpAddr::V4(x)) if !self.ipv4_only() => {
+                        Some(x.to_ipv6_mapped().into())
                     }
-                    Socks5Target::V6(x) => {
-                        if !self.ipv4_only() {
-                            upstream_sender.send_to(data, &x.into()).await?;
-                        }
-                    }
-                    Socks5Target::Domain((host, port)) => {
-                        if let Some(mut x) = self.lookup_host(&host).await {
-                            x.set_port(port);
-                            if !self.ipv4_only
-                                && let SocketAddr::V4(x) = x
-                            {
-                                upstream_sender.send_to_mapped(data, &x).await?;
-                            } else {
-                                upstream_sender.send_to(data, &x).await?;
-                            }
-                        }
-                    }
+                    Socks5Host::IpAddr(IpAddr::V6(_)) if self.ipv4_only() => None,
+                    Socks5Host::IpAddr(x) => Some(x),
+                    Socks5Host::Domain(x) => self.lookup_host(&x).await,
                 };
+                if let Some(ip) = ip {
+                    upstream_sender.send_to(data, (ip, target.1)).await?;
+                }
 
                 len = client_receiver.recv(&mut buf).await?;
             }
@@ -180,7 +168,7 @@ impl Socks5Acceptor {
 
         let mut client_addr = self.stream.peer_addr()?;
         let target = Socks5Target::try_from(&self.buf[3..])?;
-        client_addr.set_port(target.port());
+        client_addr.set_port(target.1);
 
         if client_addr.port() != 0 {
             eprintln!("{} == {} (udp)", client_addr, local_addr);

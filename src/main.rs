@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::fmt::{self, Display, Formatter};
 use std::io::IoSlice;
-use std::net::{Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
@@ -20,7 +20,7 @@ use self::{
     connector::Socks5TcpConnector,
     error::{Error, Result},
     listener::Socks5Listener,
-    target::Socks5Target,
+    target::{Socks5Host, Socks5Target},
     util::{ExtendFromTarget, IntoResult, Split},
 };
 
