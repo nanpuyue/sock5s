@@ -1,17 +1,26 @@
 use super::*;
 
-pub enum Socks5Target {
-    V4(SocketAddrV4),
-    V6(SocketAddrV6),
-    Domain((String, u16)),
+pub enum Socks5Host {
+    IpAddr(IpAddr),
+    Domain(String),
+}
+
+pub struct Socks5Target(pub Socks5Host, pub u16);
+
+impl Display for Socks5Host {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Socks5Host::IpAddr(x) => x.fmt(f),
+            Socks5Host::Domain(x) => x.fmt(f),
+        }
+    }
 }
 
 impl Display for Socks5Target {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::V4(x) => x.fmt(f),
-            Self::V6(x) => x.fmt(f),
-            Self::Domain(x) => write!(f, "{}:{}", x.0, x.1),
+        match &self.0 {
+            Socks5Host::IpAddr(x) => write!(f, "{}:{}", x, self.1),
+            Socks5Host::Domain(x) => write!(f, "{}:{}", x, self.1),
         }
     }
 }
@@ -19,20 +28,16 @@ impl Display for Socks5Target {
 impl Socks5Target {
     fn parse_ipv4(data: &[u8]) -> Self {
         debug_assert_eq!(data.len(), 6);
-        Self::V4(SocketAddrV4::new(
-            Ipv4Addr::from_octets(data[0..4].try_into().unwrap()),
-            u16::from_be_bytes([data[4], data[5]]),
-        ))
+        let ip = Ipv4Addr::from_octets(data[0..4].try_into().unwrap());
+        let port = u16::from_be_bytes([data[4], data[5]]);
+        Self(Socks5Host::IpAddr(IpAddr::V4(ip)), port)
     }
 
     fn parse_ipv6(data: &[u8]) -> Self {
         debug_assert_eq!(data.len(), 18);
-        Self::V6(SocketAddrV6::new(
-            Ipv6Addr::from_octets(data[0..16].try_into().unwrap()),
-            u16::from_be_bytes([data[16], data[17]]),
-            0,
-            0,
-        ))
+        let ip = Ipv6Addr::from_octets(data[0..16].try_into().unwrap());
+        let port = u16::from_be_bytes([data[16], data[17]]);
+        Self(Socks5Host::IpAddr(IpAddr::V6(ip)), port)
     }
 
     fn parse_domain(data: &[u8]) -> Result<Self> {
@@ -43,7 +48,7 @@ impl Socks5Target {
             Err(e) => return Err(format!("Invalid domain: {}!", e).into()),
         };
         let port = u16::from_be_bytes([data[len - 2], data[len - 1]]);
-        Ok(Self::Domain((domain, port)))
+        Ok(Self(Socks5Host::Domain(domain), port))
     }
 
     pub fn target_len(data: &[u8]) -> Result<usize> {
@@ -54,14 +59,6 @@ impl Socks5Target {
             3 => 4 + data[1] as usize,
             _ => return Err("Invalid address type!".into()),
         })
-    }
-
-    pub fn port(&self) -> u16 {
-        match self {
-            Self::V4(x) => x.port(),
-            Self::V6(x) => x.port(),
-            Self::Domain(x) => x.1,
-        }
     }
 }
 

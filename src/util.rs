@@ -1,12 +1,12 @@
 use std::io::IoSlice;
 #[cfg(target_family = "unix")]
 use std::mem::MaybeUninit;
-use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};
+use std::net::SocketAddr;
 use std::sync::Arc;
 
 use socket2::SockRef;
 use tokio::io::{self, Interest};
-use tokio::net::UdpSocket;
+use tokio::net::{ToSocketAddrs, UdpSocket};
 
 use crate::error::{Error, Result};
 
@@ -69,13 +69,8 @@ impl RecvHalf<UdpSocket> {
 
 #[allow(unused)]
 impl SendHalf<UdpSocket> {
-    pub async fn send_to(&mut self, buf: &[u8], target: &SocketAddr) -> io::Result<usize> {
-        self.0.send_to(buf, target).await
-    }
-
-    pub async fn send_to_mapped(&mut self, buf: &[u8], target: &SocketAddrV4) -> io::Result<usize> {
-        let mapped = SocketAddrV6::new(target.ip().to_ipv6_mapped(), target.port(), 0, 0);
-        self.0.send_to(buf, mapped).await
+    pub async fn send_to<A: ToSocketAddrs>(&mut self, buf: &[u8], addr: A) -> io::Result<usize> {
+        self.0.send_to(buf, addr).await
     }
 
     pub async fn send(&mut self, buf: &[u8]) -> io::Result<usize> {
