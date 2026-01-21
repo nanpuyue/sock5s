@@ -1,3 +1,4 @@
+
 use super::*;
 
 pub struct Socks5UdpClient {
@@ -124,7 +125,15 @@ impl Socks5UdpForwarder {
                     Socks5Host::Domain(x) => self.lookup_host(&x).await,
                 };
                 if let Some(ip) = ip {
-                    upstream_sender.send_to(data, (ip, target.1)).await?;
+                    use ErrorKind::*;
+                    upstream_sender
+                        .send_to(data, (ip, target.1))
+                        .await
+                        .or_else(|e| match e.kind() {
+                            ConnectionRefused | ConnectionReset | NetworkUnreachable
+                            | HostUnreachable | ConnectionAborted => Ok(0),
+                            _ => Err(e),
+                        })?;
                 }
 
                 len = client_receiver.recv(&mut buf).await?;
@@ -136,7 +145,15 @@ impl Socks5UdpForwarder {
             let mut header = (b"\x00\x00\x00").to_vec();
 
             loop {
-                let (len, mut from) = upstream_receiver.recv_from(&mut buf).await?;
+                use ErrorKind::*;
+                let (len, mut from) = match upstream_receiver.recv_from(&mut buf).await {
+                    Ok(x) => x,
+                    Err(e) => match e.kind() {
+                        ConnectionRefused | ConnectionReset | NetworkUnreachable
+                        | HostUnreachable | ConnectionAborted => continue,
+                        _ => Err(e)?,
+                    },
+                };
                 if from.is_ipv6() {
                     from.set_ip(from.ip().to_canonical());
                 }
