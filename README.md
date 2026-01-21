@@ -21,7 +21,7 @@ A lightweight SOCKS5 proxy server written in Rust.
 ## Usage
 
 ```
-sock5s 0.3.0
+sock5s 0.3.1
 nanpuyue <nanpuyue@gmail.com>
 A lightweight SOCKS5 proxy server written in Rust.
 
