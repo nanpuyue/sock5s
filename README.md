@@ -37,7 +37,7 @@ Options:
 
 This project is licensed under the [MIT license].
 
-[MIT license]: https://github.com/nanpuyue/sock5s/blob/master/LICENSE
+[MIT license]: https://github.com/nanpuyue/sock5s/blob/main/LICENSE
 
 ## Homepage
 
