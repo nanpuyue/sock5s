@@ -1,4 +1,3 @@
-
 use super::*;
 
 pub struct Socks5UdpClient {
@@ -146,7 +145,7 @@ impl Socks5UdpForwarder {
 
             loop {
                 use ErrorKind::*;
-                let (len, mut from) = match upstream_receiver.recv_from(&mut buf).await {
+                let (len, from) = match upstream_receiver.recv_from(&mut buf).await {
                     Ok(x) => x,
                     Err(e) => match e.kind() {
                         ConnectionRefused | ConnectionReset | NetworkUnreachable
@@ -154,11 +153,8 @@ impl Socks5UdpForwarder {
                         _ => Err(e)?,
                     },
                 };
-                if from.is_ipv6() {
-                    from.set_ip(from.ip().to_canonical());
-                }
                 header.truncate(3);
-                header.extend_from_target(&from);
+                header.put_socks5_addr(from);
 
                 let data = [IoSlice::new(&header), IoSlice::new(&buf[..len])];
                 client_sender.send_vectored(&data).await?;

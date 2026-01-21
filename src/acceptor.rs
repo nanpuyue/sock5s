@@ -75,12 +75,9 @@ impl Socks5Acceptor {
         }
     }
 
-    pub async fn connected(&mut self, mut local_addr: SocketAddr) -> Result<()> {
+    pub async fn connected(&mut self, local_addr: SocketAddr) -> Result<()> {
         let mut reply = b"\x05\x00\x00".to_vec();
-        if local_addr.is_ipv6() {
-            local_addr.set_ip(local_addr.ip().to_canonical());
-        }
-        reply.extend_from_target(&local_addr);
+        reply.put_socks5_addr(local_addr);
         self.stream.write_all(&reply).await?;
         Ok(())
     }
