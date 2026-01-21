@@ -21,7 +21,7 @@ use self::{
     error::{Error, Result},
     listener::Socks5Listener,
     target::{Socks5Host, Socks5Target},
-    util::{ExtendFromTarget, IntoResult, Split},
+    util::{IntoResult, PutSocks5Addr, Split},
 };
 
 pub type Socks5Stream = TcpStream;

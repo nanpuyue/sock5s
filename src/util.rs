@@ -36,8 +36,8 @@ pub trait Vectored {
     async fn send_vectored(&self, bufs: &[IoSlice<'_>]) -> io::Result<usize>;
 }
 
-pub trait ExtendFromTarget<T> {
-    fn extend_from_target(&mut self, from: &T);
+pub trait PutSocks5Addr {
+    fn put_socks5_addr(&mut self, addr: SocketAddr);
 }
 
 impl Split for UdpSocket {
@@ -83,9 +83,12 @@ impl SendHalf<UdpSocket> {
     }
 }
 
-impl ExtendFromTarget<SocketAddr> for Vec<u8> {
-    fn extend_from_target(&mut self, from: &SocketAddr) {
-        match from {
+impl PutSocks5Addr for Vec<u8> {
+    fn put_socks5_addr(&mut self, mut addr: SocketAddr) {
+        if addr.is_ipv6() {
+            addr.set_ip(addr.ip().to_canonical());
+        }
+        match addr {
             SocketAddr::V4(x) => {
                 self.push(b'\x01');
                 self.extend_from_slice(&x.ip().octets());
