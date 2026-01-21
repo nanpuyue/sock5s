@@ -35,6 +35,7 @@ pub trait Split {
 pub trait Vectored {
     async fn send_vectored(&self, bufs: &[IoSlice<'_>]) -> io::Result<usize>;
 }
+
 pub trait ExtendFromTarget<T> {
     fn extend_from_target(&mut self, from: &T);
 }
