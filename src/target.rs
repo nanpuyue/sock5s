@@ -1,10 +1,12 @@
 use super::*;
 
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub enum Socks5Host {
     IpAddr(IpAddr),
     Domain(String),
 }
 
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Socks5Target(pub Socks5Host, pub u16);
 
 impl Display for Socks5Host {
@@ -19,7 +21,8 @@ impl Display for Socks5Host {
 impl Display for Socks5Target {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match &self.0 {
-            Socks5Host::IpAddr(x) => write!(f, "{}:{}", x, self.1),
+            Socks5Host::IpAddr(IpAddr::V4(x)) => write!(f, "{}:{}", x, self.1),
+            Socks5Host::IpAddr(IpAddr::V6(x)) => write!(f, "[{}]:{}", x, self.1),
             Socks5Host::Domain(x) => write!(f, "{}:{}", x, self.1),
         }
     }

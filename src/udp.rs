@@ -7,8 +7,9 @@ pub struct Socks5UdpClient {
 
 pub struct Socks5UdpForwarder {
     ipv4_only: bool,
-    pub udp_socket: Option<UdpSocket>,
-    pub hosts: Option<HashMap<String, IpAddr>>,
+    udp_socket: Option<UdpSocket>,
+    hosts: Option<HashMap<String, IpAddr>>,
+    targets: HashSet<Socks5Target>,
 }
 
 impl Socks5UdpClient {
@@ -44,6 +45,7 @@ impl Socks5UdpForwarder {
             ipv4_only,
             udp_socket,
             hosts: None,
+            targets: HashSet::new(),
         })
     }
 
@@ -98,7 +100,7 @@ impl Socks5UdpForwarder {
             }
             udp_socket.connect(from).await?;
         }
-        eprintln!("{from} == {local_addr} (udp)");
+        println!("{from} <> {local_addr} (UDP)");
 
         let (client_receiver, client_sender) = &mut udp_socket.split();
         let (upstream_receiver, upstream_sender) =
@@ -111,7 +113,9 @@ impl Socks5UdpForwarder {
                 }
                 let offset = Socks5Target::target_len(&buf[3..])?;
                 let target = Socks5Target::try_from(&buf[3..3 + offset])?;
-                // eprintln!("{from} -> {target} (udp)");
+                if self.targets.insert(target.clone()) {
+                    println!("{from} -> {target} (UDP)");
+                }
 
                 let data = &buf[3 + offset..len];
                 let ip = match target.0 {
@@ -179,6 +183,7 @@ impl Socks5Acceptor {
         local_addr = udp_socket.local_addr()?;
 
         let mut client_addr = self.stream.peer_addr()?;
+        println!("{client_addr} => {local_addr} (UDP)");
         client_addr.set_port(target.1);
         self.connected(local_addr).await?;
 

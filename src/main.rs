@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::convert::TryFrom;
 use std::fmt::{self, Display, Formatter};
 use std::io::{ErrorKind, IoSlice};
@@ -63,14 +63,16 @@ struct Cli {
 async fn main() -> Result<()> {
     let cli = Cli::parse();
     let mut listener = Socks5Listener::listen(cli.listen).await?;
+    println!("Listening on: {}\n", cli.listen);
 
     #[cfg(target_family = "unix")]
     let _ = set_rlimit_nofile(4096);
 
     while let Some((acceptor, client)) = listener.next().await.transpose()? {
         tokio::spawn(async move {
-            if let Err(e) = acceptor.accept().await {
-                eprintln!("{client} => {e}")
+            match acceptor.accept().await {
+                Ok(_) => println!("{client} =! Closed."),
+                Err(e) => println!("{client} =! Error: {e}"),
             }
         });
     }
