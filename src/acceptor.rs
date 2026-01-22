@@ -1,8 +1,8 @@
 use super::*;
 
 pub struct Socks5Acceptor {
-    pub(super) stream: TcpStream,
-    pub(super) buf: Vec<u8>,
+    pub buf: Vec<u8>,
+    pub stream: TcpStream,
 }
 
 impl Socks5Acceptor {
@@ -24,6 +24,18 @@ impl Socks5Acceptor {
 
         self.stream.write_all(b"\x05\x00").await?;
         Ok(())
+    }
+
+    pub async fn accept(mut self) -> Result<()> {
+        self.authenticate().await?;
+        let (command, target) = self.accept_command().await?;
+        let target = Socks5Target::try_from(target)?;
+
+        if command == 3 {
+            self.associate_udp(target).await
+        } else {
+            self.connect(target).await
+        }
     }
 
     pub async fn accept_command(&mut self) -> Result<(u8, &[u8])> {
@@ -51,28 +63,6 @@ impl Socks5Acceptor {
         }
 
         Ok((self.buf[1], &self.buf[3..]))
-    }
-
-    pub async fn connect_tcp(mut self) -> Result<()> {
-        let target = Socks5Target::try_from(&self.buf[3..])?;
-        let mut upstream = Socks5TcpConnector.connect(target).await?;
-        self.connected(self.stream.local_addr()?).await?;
-
-        tokio::io::copy_bidirectional(&mut self.stream, &mut upstream).await?;
-        Ok(())
-    }
-
-    pub async fn accept(mut self) -> Result<()> {
-        self.authenticate().await?;
-        let (command, target) = self.accept_command().await?;
-        let target = Socks5Target::try_from(target)?;
-
-        if command == 3 {
-            self.associate_udp().await
-        } else {
-            eprintln!("{} -> {}", self.peer_addr(), target);
-            self.connect_tcp().await
-        }
     }
 
     pub async fn connected(&mut self, local_addr: SocketAddr) -> Result<()> {

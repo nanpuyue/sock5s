@@ -45,7 +45,7 @@ impl Socks5Target {
         debug_assert_eq!(len, 3 + data[0] as usize);
         let domain = match String::from_utf8(data[1..len - 2].into()) {
             Ok(s) => s,
-            Err(e) => return Err(format!("Invalid domain: {}!", e).into()),
+            Err(e) => return Err(format!("Invalid domain: {e}!").into()),
         };
         let port = u16::from_be_bytes([data[len - 2], data[len - 1]]);
         Ok(Self(Socks5Host::Domain(domain), port))

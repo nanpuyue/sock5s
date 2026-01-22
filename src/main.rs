@@ -17,7 +17,6 @@ use tokio_stream::{Stream, StreamExt};
 use self::util::set_rlimit_nofile;
 use self::{
     acceptor::Socks5Acceptor,
-    connector::Socks5TcpConnector,
     error::{Error, Result},
     listener::Socks5Listener,
     target::{Socks5Host, Socks5Target},
@@ -27,10 +26,10 @@ use self::{
 pub type Socks5Stream = TcpStream;
 
 mod acceptor;
-mod connector;
 mod error;
 mod listener;
 mod target;
+mod tcp;
 mod udp;
 mod util;
 
@@ -71,7 +70,7 @@ async fn main() -> Result<()> {
     while let Some((acceptor, client)) = listener.next().await.transpose()? {
         tokio::spawn(async move {
             if let Err(e) = acceptor.accept().await {
-                eprintln!("{} => {}", client, e)
+                eprintln!("{client} => {e}")
             }
         });
     }

@@ -82,24 +82,23 @@ impl Socks5UdpForwarder {
     }
 
     pub async fn forward_udp(mut self, client: Socks5UdpClient) -> Result<()> {
-        let client_addr = client.client_addr;
         let udp_socket = client.udp_socket;
+        let client_addr = client.client_addr;
+        let local_addr = udp_socket.local_addr()?;
 
-        let mut connected = false;
-        if client.client_addr.port() != 0 {
+        if client_addr.port() != 0 {
             udp_socket.connect(client_addr).await?;
-            connected = true;
         }
 
         let mut buf = vec![0; 1472];
-        let (mut len, addr) = udp_socket.recv_from(&mut buf).await?;
-        if !connected {
-            if addr.ip() != client_addr.ip() {
-                return Err(format!("Invalid client: {addr}!").into());
+        let (mut len, from) = udp_socket.recv_from(&mut buf).await?;
+        if udp_socket.peer_addr().is_err() {
+            if from.ip() != client_addr.ip() {
+                return Err(format!("Invalid udp client: {from}!").into());
             }
-            udp_socket.connect(addr).await?;
-            eprintln!("{} == {} (udp)", addr, udp_socket.local_addr()?);
+            udp_socket.connect(from).await?;
         }
+        eprintln!("{from} == {local_addr} (udp)");
 
         let (client_receiver, client_sender) = &mut udp_socket.split();
         let (upstream_receiver, upstream_sender) =
@@ -112,7 +111,7 @@ impl Socks5UdpForwarder {
                 }
                 let offset = Socks5Target::target_len(&buf[3..])?;
                 let target = Socks5Target::try_from(&buf[3..3 + offset])?;
-                // eprintln!("{} -> {} (udp)", addr, target);
+                // eprintln!("{from} -> {target} (udp)");
 
                 let data = &buf[3 + offset..len];
                 let ip = match target.0 {
@@ -173,19 +172,14 @@ impl Socks5UdpForwarder {
 }
 
 impl Socks5Acceptor {
-    pub async fn associate_udp(mut self) -> Result<()> {
+    pub async fn associate_udp(mut self, target: Socks5Target) -> Result<()> {
         let mut local_addr = self.stream.local_addr()?;
         local_addr.set_port(0);
         let udp_socket = UdpSocket::bind(&local_addr).await?;
         local_addr = udp_socket.local_addr()?;
 
         let mut client_addr = self.stream.peer_addr()?;
-        let target = Socks5Target::try_from(&self.buf[3..])?;
         client_addr.set_port(target.1);
-
-        if client_addr.port() != 0 {
-            eprintln!("{} == {} (udp)", client_addr, local_addr);
-        }
         self.connected(local_addr).await?;
 
         let forwarder = match Socks5UdpForwarder::bind() {
