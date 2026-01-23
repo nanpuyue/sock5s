@@ -1,6 +1,4 @@
 use std::io::IoSlice;
-#[cfg(target_family = "unix")]
-use std::mem::MaybeUninit;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
@@ -106,12 +104,15 @@ impl PutSocks5Addr for Vec<u8> {
 #[cfg(target_family = "unix")]
 pub fn set_rlimit_nofile(limit: libc::rlim_t) -> Result<()> {
     unsafe {
-        let mut rlimit = MaybeUninit::uninit();
-        if libc::getrlimit(libc::RLIMIT_NOFILE, rlimit.as_mut_ptr()) != 0 {
+        let mut rlimit = libc::rlimit {
+            rlim_cur: 0,
+            rlim_max: 0,
+        };
+        if libc::getrlimit(libc::RLIMIT_NOFILE, &mut rlimit) != 0 {
             return Err(io::Error::last_os_error().into());
         }
-        let mut rlimit = rlimit.assume_init();
 
+        let limit = std::cmp::min(limit, rlimit.rlim_max);
         if rlimit.rlim_cur < limit {
             rlimit.rlim_cur = limit;
             if libc::setrlimit(libc::RLIMIT_NOFILE, &rlimit) != 0 {
